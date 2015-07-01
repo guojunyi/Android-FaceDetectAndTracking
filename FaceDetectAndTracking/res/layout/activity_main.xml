@@ -1,0 +1,52 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+
+        <com.smartcamera.widget.CameraView
+            android:id="@+id/cameraView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" 
+            />
+        <com.smartcamera.widget.CameraFaceFrameView
+            android:id="@+id/faceFrameView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" 
+            />
+        
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp" 
+        android:background="#000"
+        >
+       
+        <CheckBox
+            android:id="@+id/checkBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="10dp"
+            android:layout_marginLeft="10dp"
+            />
+        <TextView 
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="Enable single tracking"
+            android:layout_toRightOf="@+id/checkBox"
+            android:textSize="18sp"
+            android:textColor="#fff"
+            android:gravity="left|center_vertical"
+            />
+    </RelativeLayout>
+
+</LinearLayout>
