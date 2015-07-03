@@ -21,9 +21,10 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.smartcamera.core.CameraManager;
+import com.smartcamera.core.CameraManager.TrackingCallback;
 
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
-		Camera.PreviewCallback {
+		Camera.PreviewCallback,TrackingCallback {
 	private static final String TAG = "CameraView";
 	private Context mContext;
 	private SurfaceHolder mHolder;
@@ -62,6 +63,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 		mHolder.setKeepScreenOn(true);
 		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		CameraManager.getInstance().open(0);
+		CameraManager.getInstance().setTrackingCallback(this);
 		mOrientationEventListener = new OrientationEventListener(mContext) {
 
 			@Override
@@ -227,6 +229,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 	}
 
 
+	
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera) {
 		// TODO Auto-generated method stub
@@ -369,20 +372,20 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
         			
         			byte[] imageBytes = index==0?mDatas2:mDatas1;
         			
-        			time = System.currentTimeMillis();
+        			
         			int[] faces = CameraManager.getInstance().detectFaceX(imageBytes, p.getPreviewSize().width, p.getPreviewSize().height,-90);
-
-        			mHandler.post(new Runnable() {
-
-        				@Override
-        				public void run() {
-        					// TODO Auto-generated method stub
-        					mCameraFaceFrameView.clearFaceFrame();
-        				}
-
-        			});
+        			
 
         			if (faces != null && faces.length != 0) {
+        				mHandler.post(new Runnable() {
+
+            				@Override
+            				public void run() {
+            					// TODO Auto-generated method stub
+            					mCameraFaceFrameView.clearFaceFrame();
+            				}
+
+            			});
         				int count = faces[faces.length - 1];
         				for (int i = 0; i < count; i++) {
         					int flag = faces[5 * i + 4];
@@ -391,6 +394,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
         								faces[5 * i + 1], faces[5 * i + 0]
         										+ faces[5 * i + 2], faces[5 * i + 1]
         										+ faces[5 * i + 3]);
+        						
         						mHandler.post(new Runnable() {
 
         							@Override
@@ -406,9 +410,36 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
         			}
         			
         			Log.e(TAG,"Detect Time Interval:"+(System.currentTimeMillis()-time));
+        			time = System.currentTimeMillis();
                 }
             } while (!mStopThread);
             Log.e(TAG, "Finish processing thread");
         }
     }
+
+	@Override
+	public void onCallback(final RectF rect, int clearFlag) {
+		// TODO Auto-generated method stub
+		if(clearFlag==1){
+			mHandler.post(new Runnable() {
+
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					mCameraFaceFrameView.clearFaceFrame();
+				}
+
+			});
+		}
+		
+		mHandler.post(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				mCameraFaceFrameView.drawFaceFrame(rect);
+			}
+
+		});
+	}
 }

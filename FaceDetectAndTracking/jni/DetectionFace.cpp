@@ -2,31 +2,19 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include <CompressiveTracker.h>
+#include "TrackObj.h"
 #include <android/log.h>
 
 #define TAG    "**guojunyi**"
 
-#undef LOG // 取消默认的LOG#define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,TAG,__VA_ARGS__)#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,TAG,__VA_ARGS__)#define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,TAG,__VA_ARGS__)#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,TAG,__VA_ARGS__)#define LOGF(...)  __android_log_print(ANDROID_LOG_FATAL,TAG,__VA_ARGS__)using namespace cv;using namespace std;static CascadeClassifier mCascade1;static CascadeClassifier mCascade2;static CascadeClassifier mCascade3;static CascadeClassifier mCascade4;static CompressiveTracker ct;int vmin = 10, vmax = 256, smin = 30;bool isTracking;Mat frame, hsv, hue, mask, hist, histimg = Mat::zeros(200, 320, CV_8UC3), backproj;bool isInitTracker;Rect trackFaceRect;
-float hranges[] = { 0, 180 };
-const float* phranges = hranges;
-int hsize = 16;
-
-bool enableSingleTracking;
+#undef LOG // 取消默认的LOG#define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,TAG,__VA_ARGS__)#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,TAG,__VA_ARGS__)#define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,TAG,__VA_ARGS__)#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,TAG,__VA_ARGS__)#define LOGF(...)  __android_log_print(ANDROID_LOG_FATAL,TAG,__VA_ARGS__)using namespace cv;using namespace std;static CascadeClassifier mCascade1;static CascadeClassifier mCascade2;static CascadeClassifier mCascade3;static CascadeClassifier mCascade4;int vmin = 65, vmax = 256, smin = 55;bool isTracking;bool isInitTracker;bool enableSingleTracking;TrackObj trackObj;
 jint Java_com_smartcamera_core_CameraManager_loadCascade(JNIEnv *env,
 		jobject obj, jstring cascade1, jstring cascade2, jstring cascade3,
 		jstring cascade4) {
-	frame = Scalar::all(0);
-	hsv = Scalar::all(0);
-	hue = Scalar::all(0);
-	mask = Scalar::all(0);
-	hist = Scalar::all(0);
-	histimg = Mat::zeros(200, 320, CV_8UC3);
-	backproj = Scalar::all(0);
+
 	isTracking = false;
 	isInitTracker = false;
 	enableSingleTracking = false;
-	hsize = 16;
 
 	const char *cascadePath1 = env->GetStringUTFChars(cascade1, 0);
 	const char *cascadePath2 = env->GetStringUTFChars(cascade2, 0);
@@ -147,7 +135,6 @@ int iAbsolute(int a, int b) {
 	return c;
 }
 
-
 CvPoint mousePosition;
 CvKalman *kalman;
 CvMat* measurement;
@@ -157,88 +144,91 @@ int minHeight;
 void initTracker(Mat image, int winWidth, int winHeight) {
 	if (!isInitTracker) {
 		isInitTracker = true;
-		cvtColor(image, hsv, CV_BGR2HSV);
+		TrackObj &obj = trackObj;
+		obj.flag = true;
+		obj.frame = Scalar::all(0);
+		obj.hsv = Scalar::all(0);
+		obj.hue = Scalar::all(0);
+		obj.mask = Scalar::all(0);
+		obj.hist = Scalar::all(0);
+		obj.histimg = Mat::zeros(200, 320, CV_8UC3);
+		obj.backproj = Scalar::all(0);
+		obj.hsize = 16;
+
+		cvtColor(image, obj.hsv, CV_BGR2HSV);
 		int _vmin = vmin, _vmax = vmax;
-		inRange(hsv, Scalar(0, smin, MIN(_vmin, _vmax)),
-					Scalar(180, 256, MAX(_vmin, _vmax)), mask);
+		inRange(obj.hsv, Scalar(0, smin, MIN(_vmin, _vmax)),
+				Scalar(180, 256, MAX(_vmin, _vmax)), obj.mask);
 		int ch[] = { 0, 0 };
-		hue.create(hsv.size(), hsv.depth());
-		mixChannels(&hsv, 1, &hue, 1, ch, 1);
+		obj.hue.create(obj.hsv.size(), obj.hsv.depth());
+		mixChannels(&obj.hsv, 1, &obj.hue, 1, ch, 1);
 
-		const int stateNum = 4;
-		const int measureNum = 2;
+		Mat roi(obj.hue, obj.trackFaceRect), maskroi(obj.mask,
+				obj.trackFaceRect);
+		calcHist(&roi, 1, 0, maskroi, obj.hist, 1, &obj.hsize, &obj.phranges);
 
-		kalman = cvCreateKalman(stateNum, measureNum, 0); //state(x,y,detaX,detaY)
-		CvMat* process_noise = cvCreateMat(stateNum, 1, CV_32FC1);
-		measurement = cvCreateMat(measureNum, 1, CV_32FC1); //measurement(x,y)
-		CvRNG rng = cvRNG(-1);
-		float A[stateNum][stateNum] = { //transition matrix
-				1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1 };
-		memcpy(kalman->transition_matrix->data.fl, A, sizeof(A));
-		cvSetIdentity(kalman->measurement_matrix, cvRealScalar(1));
-		cvSetIdentity(kalman->process_noise_cov, cvRealScalar(1e-5));
-		cvSetIdentity(kalman->measurement_noise_cov, cvRealScalar(1e-1));
-		cvSetIdentity(kalman->error_cov_post, cvRealScalar(1));
-		//initialize post state of kalman filter at random
-		cvRandArr(&rng, kalman->state_post, CV_RAND_UNI, cvRealScalar(0),
-				cvRealScalar(winHeight > winWidth ? winWidth : winHeight));
+		normalize(obj.hist, obj.hist, 0, 255, CV_MINMAX);
 
+//		histimg = Scalar::all(0);
+//		int binW = histimg.cols / hsize;
+//		Mat buf(1, hsize, CV_8UC3);
+//		for (int i = 0; i < hsize; i++)
+//			buf.at < Vec3b > (i) = Vec3b(
+//					saturate_cast < uchar > (i * 180. / hsize), 255, 255);
+//		cvtColor(buf, buf, CV_HSV2BGR);
+//		for (int i = 0; i < hsize; i++) {
+//			int val = saturate_cast<int>(
+//					hist.at<float>(i) * histimg.rows / 255);
+//			rectangle(histimg, Point(i * binW, histimg.rows),
+//					Point((i + 1) * binW, histimg.rows - val),
+//					Scalar(buf.at < Vec3b > (i)), -1, 8);
+//		}
+//		calcBackProject(&hue, 1, 0, hist, backproj, &phranges);
+//		backproj &= mask;
+//
+//		RotatedRect track_box = CamShift(backproj, trackFaceRect,
+//					TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1));
+//
+//		trackFaceRect = track_box.boundingRect();
+//		minWidth = track_box.size.width;
+//		minHeight = track_box.size.height;
+//		minWidth = trackFaceRect.width;
+//		minHeight = trackFaceRect.height;
 
-		Mat roi(hue, trackFaceRect), maskroi(mask, trackFaceRect);
-		calcHist(&roi, 1, 0, maskroi, hist, 1, &hsize, &phranges);
-
-		normalize(hist, hist, 0, 255, CV_MINMAX);
-		histimg = Scalar::all(0);
-		int binW = histimg.cols / hsize;
-		Mat buf(1, hsize, CV_8UC3);
-		for (int i = 0; i < hsize; i++)
-			buf.at < Vec3b > (i) = Vec3b(
-					saturate_cast < uchar > (i * 180. / hsize), 255, 255);
-		cvtColor(buf, buf, CV_HSV2BGR);
-		for (int i = 0; i < hsize; i++) {
-			int val = saturate_cast<int>(
-					hist.at<float>(i) * histimg.rows / 255);
-			rectangle(histimg, Point(i * binW, histimg.rows),
-					Point((i + 1) * binW, histimg.rows - val),
-					Scalar(buf.at < Vec3b > (i)), -1, 8);
-		}
-		calcBackProject(&hue, 1, 0, hist, backproj, &phranges);
-		backproj &= mask;
-
-		RotatedRect track_box = CamShift(backproj, trackFaceRect,
-					TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1));
-
-		trackFaceRect = track_box.boundingRect();
-		minWidth = track_box.size.width;
-		minHeight = track_box.size.height;
 	}
 }
 
-void trackFace(Mat image, int *result,int imageWidth, int imageHeight) {
-	cvtColor(image, hsv, CV_BGR2HSV);
+void trackFace(Mat image, int *result, int imageWidth, int imageHeight) {
+
+	cvtColor(image, trackObj.hsv, CV_BGR2HSV);
 	int _vmin = vmin, _vmax = vmax;
-	inRange(hsv, Scalar(0, smin, MIN(_vmin, _vmax)),
-			Scalar(180, 256, MAX(_vmin, _vmax)), mask);
+	inRange(trackObj.hsv, Scalar(0, smin, MIN(_vmin, _vmax)),
+			Scalar(180, 256, MAX(_vmin, _vmax)), trackObj.mask);
 	int ch[] = { 0, 0 };
-	hue.create(hsv.size(), hsv.depth());
-	mixChannels(&hsv, 1, &hue, 1, ch, 1);
-	calcBackProject(&hue, 1, 0, hist, backproj, &phranges);
-	backproj &= mask;
+	trackObj.hue.create(trackObj.hsv.size(), trackObj.hsv.depth());
+	mixChannels(&trackObj.hsv, 1, &trackObj.hue, 1, ch, 1);
+	calcBackProject(&trackObj.hue, 1, 0, trackObj.hist, trackObj.backproj,
+			&trackObj.phranges);
+	trackObj.backproj &= trackObj.mask;
 
-	RotatedRect track_box = CamShift(backproj, trackFaceRect,
+	RotatedRect track_box = CamShift(trackObj.backproj, trackObj.trackFaceRect,
 			TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1));
-
-	trackFaceRect = track_box.boundingRect();
 
 	Rect brect = track_box.boundingRect();
 	int centerX = brect.x + brect.width / 2;
 	int centerY = brect.y + brect.height / 2;
 	int width = (int) ((float) brect.width / 5.0 * 4);
 	int height = (int) ((float) brect.height / 5.0 * 4);
-	result[0] = brect.x;
-	result[1] = brect.y;
-	result[2] = brect.width;
-	result[3] = brect.height;
+	result[0] = imageHeight - brect.y - brect.height;
+	result[1] = brect.x;
+	result[2] = brect.height;
+	result[3] = brect.width;
+
+//	result[0] = brect.x;
+//	result[1] = brect.y;
+//	result[2] = brect.width;
+//	result[3] = brect.height;
+
 	result[4] = 1;
 	result[5] = 1;
 }
@@ -246,8 +236,8 @@ void trackFace(Mat image, int *result,int imageWidth, int imageHeight) {
 #define MAX_FACES 30
 #define FIND_FACE_COUNT 1
 
-int globalSize = 100;
-int detectFace(Mat image, int *result,int imageWidth,int imageHeight) {
+int detectFace(Mat image, int *result, int imageWidth, int imageHeight,
+		int angle) {
 	vector < Rect > faces;
 	Mat frame_gray;
 	cvtColor(image, frame_gray, CV_BGR2GRAY);
@@ -257,15 +247,15 @@ int detectFace(Mat image, int *result,int imageWidth,int imageHeight) {
 //				CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_DO_CANNY_PRUNING,
 //				Size(30, 30));
 
-	mCascade1.detectMultiScale(frame_gray, faces, 1.1, 2,
-				0, Size(20,20),Size(2147483647,2147483647));
+	mCascade1.detectMultiScale(frame_gray, faces, 1.1, 2, 0, Size(20, 20),
+			Size(2147483647, 2147483647));
 	int bestFaceCount = 0;
 	for (int i = 0; i < faces.size(); i++) {
 		if (i >= MAX_FACES) {
 			break;
 		}
 
-		if(enableSingleTracking&&bestFaceCount>=FIND_FACE_COUNT){
+		if (enableSingleTracking && bestFaceCount >= FIND_FACE_COUNT) {
 			break;
 		}
 
@@ -309,9 +299,21 @@ int detectFace(Mat image, int *result,int imageWidth,int imageHeight) {
 //			result[5 * i + 2] = width;
 //			result[5 * i + 3] = height;
 
-			if(enableSingleTracking){
-				trackFaceRect = Rect(result[5 * i + 0],result[5 * i + 1],result[5 * i + 2],result[5 * i + 3]);
-				initTracker(image,imageWidth,imageHeight);
+			if (enableSingleTracking) {
+				Mat rotateMat;
+				rotate(image, -angle, rotateMat);
+//				trackFaceRect = Rect(result[5 * i + 0], result[5 * i + 1],
+//						result[5 * i + 2], result[5 * i + 3]);
+
+				int x = centerY - height / 2;
+				int y = imageHeight - (centerX + width / 2);
+				Rect rect = Rect(x, y, result[5 * i + 3], result[5 * i + 2]);
+
+				trackObj.trackFaceRect = rect;
+//				rectangle(rotateMat,trackFaceRect,Scalar(255,0,0));
+//				imwrite("/storage/emulated/0/123.jpg",rotateMat);
+
+				initTracker(rotateMat, imageWidth, imageHeight);
 			}
 			LOGE("start tracking");
 			flag = true;
@@ -319,7 +321,7 @@ int detectFace(Mat image, int *result,int imageWidth,int imageHeight) {
 		}
 
 		if (flag) {
-			if(enableSingleTracking){
+			if (enableSingleTracking) {
 				isTracking = true;
 			}
 			result[5 * i + 4] = 1;
@@ -329,58 +331,63 @@ int detectFace(Mat image, int *result,int imageWidth,int imageHeight) {
 		}
 	}
 	result[faces.size() * 5] = faces.size();
+
 	return faces.size();
 }
 
-
-
 jintArray Java_com_smartcamera_core_CameraManager_detectFaceX(JNIEnv *env,
 		jobject obj, jbyteArray yuvDatas, jint width, jint height, jint angle) {
+	clock_t time_a, time_b;
+	time_a = clock();
 	jbyte *pBuf = (jbyte*) env->GetByteArrayElements(yuvDatas, 0);
 	Mat yuv420Mat(height + height / 2, width, CV_8UC1, (unsigned char *) pBuf);
 	Mat bgrMat;
 	cvtColor(yuv420Mat, bgrMat, CV_YUV2BGR_NV21);
 
-	Mat rotateMat;
-	rotate(bgrMat, angle, rotateMat);
-
-	if (isTracking&&enableSingleTracking) {
+	if (isTracking && enableSingleTracking) {
+		//imwrite("/storage/emulated/0/123.jpg",bgrMat);
 		int *facesData = (int*) malloc(6 * sizeof(int));
-		trackFace(rotateMat, facesData,height,width);
-		if (facesData[0] < 0 || facesData[1] < 0
-				|| (facesData[0] + facesData[2] > height)
-				|| (facesData[1] + facesData[3] > width)) {
+		trackFace(bgrMat, facesData, width, height);
+		if (facesData[0] <= 0 || facesData[1] <= 0
+				|| (facesData[0] + facesData[2] >= height)
+				|| (facesData[1] + facesData[3] >= width)) {
 			facesData[4] = 0;
 			facesData[5] = 0;
 			isTracking = false;
 			isInitTracker = false;
 			LOGE("miss tracking");
-			LOGE("Tracking %i %i %i %i", facesData[0], facesData[1],
-					facesData[2], facesData[3]);
 		}
-
 		jintArray result = env->NewIntArray(6);
 		env->SetIntArrayRegion(result, 0, 6, facesData);
 		free(facesData);
 		env->ReleaseByteArrayElements(yuvDatas, pBuf, 0);
+		time_b = clock();
+		double duration = (double) (time_b - time_a) / CLOCKS_PER_SEC;
+		LOGE("%f", duration);
 		return result;
 	}
 
-//imwrite("/storage/emulated/0/123.jpg",rotateMat);
+	Mat rotateMat;
+	rotate(bgrMat, angle, rotateMat);
+
 	int *facesData = (int*) malloc(MAX_FACES * 5 * sizeof(int) + sizeof(int));
-	int facesSize = detectFace(rotateMat, facesData,height,width);
+	int facesSize = detectFace(rotateMat, facesData, width, height, angle);
 	int size = facesSize * 5 + 1;
 	jintArray result = env->NewIntArray(size);
 	env->SetIntArrayRegion(result, 0, size, facesData);
 	free(facesData);
 
 	env->ReleaseByteArrayElements(yuvDatas, pBuf, 0);
+
+	time_b = clock();
+	double duration = (double) (time_b - time_a) / CLOCKS_PER_SEC;
+	LOGE("%f", duration);
 	return result;
 }
 
 jint Java_com_smartcamera_core_CameraManager_enableSingleTracking(JNIEnv *env,
 		jobject obj, jint isEnable) {
-	enableSingleTracking = isEnable==1?true:false;
+	enableSingleTracking = isEnable == 1 ? true : false;
 
 	return isEnable;
 }

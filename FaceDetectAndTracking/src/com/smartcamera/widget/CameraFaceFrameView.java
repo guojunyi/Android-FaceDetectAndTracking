@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.RectF;
@@ -29,7 +30,7 @@ public class CameraFaceFrameView extends View {
 		mPaint = new Paint();
 		mPaint.setStyle(Style.STROKE);
 		mPaint.setAntiAlias(true);
-		mPaint.setStrokeWidth(Utils.dp2px(context, 1));
+		mPaint.setStrokeWidth(Utils.dp2px(context, 2));
 		mPaint.setColor(0xff5cb7f0);
 		
 		animateMargin = Utils.dp2px(context, (int)animateMargin);
@@ -47,6 +48,7 @@ public class CameraFaceFrameView extends View {
 			int bottom = (int)  (item.rect.bottom/scaleFactorH);
 		
 			canvas.drawRoundRect(new RectF(left,top,right,bottom), Utils.dp2px(getContext(), 5), Utils.dp2px(getContext(), 5), mPaint);
+			
 			
 		}
 	}

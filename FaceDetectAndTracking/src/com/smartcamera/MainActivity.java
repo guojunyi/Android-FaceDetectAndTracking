@@ -5,9 +5,11 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -111,6 +113,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2{
 	private float                  mRelativeFaceSize   = 0.2f;
     private int                    mAbsoluteFaceSize   = 0;
     private static final Scalar    FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
+    
+    Rect[] facesArray;
 	@Override
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 		// TODO Auto-generated method stub
@@ -124,14 +128,18 @@ public class MainActivity extends Activity implements CvCameraViewListener2{
                 mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
             }
         }
-        
         if (mJavaDetector != null)
         	mJavaDetector.detectMultiScale(mGray, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
                     new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
-        Rect[] facesArray = faces.toArray();
-        for (int i = 0; i < facesArray.length; i++)
-            Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
-
+        
+        
+        facesArray = faces.toArray();
+        for (int i = 0; i < facesArray.length; i++){
+         	Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
+        }
+        
+        
+            
         return mRgba;
 	}
 	

@@ -3,6 +3,7 @@ package com.smartcamera.core;
 import java.util.List;
 
 import android.graphics.ImageFormat;
+import android.graphics.RectF;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.media.MediaPlayer;
@@ -124,4 +125,23 @@ public class CameraManager {
 	public native int[] detectFaceX(byte[] datas,int width,int height,int angle);
 	
 	public native int enableSingleTracking(int isEnable);
+	
+	public int trackFace(int[] datas){   
+		RectF rect = new RectF(datas[0],datas[1],datas[0]+datas[2],datas[1]+datas[3]);
+		if(null!=mTrackingCallback){
+			mTrackingCallback.onCallback(rect, datas[4]);
+		}
+        return 0;    
+    } 
+	
+	private TrackingCallback mTrackingCallback;
+	
+	public void setTrackingCallback(TrackingCallback trackingCallback){
+		mTrackingCallback = trackingCallback;
+	}
+	
+	public interface TrackingCallback{
+		
+		public void onCallback(RectF rect,int clearFlag);
+	}
 }

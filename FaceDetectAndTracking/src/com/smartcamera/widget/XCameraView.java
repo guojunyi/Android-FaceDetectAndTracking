@@ -201,6 +201,8 @@ public class XCameraView extends SurfaceView implements PreviewCallback,SurfaceH
 	public void onPreviewFrame(byte[] data, Camera camera) {
 		// TODO Auto-generated method stub
 		//Log.e(TAG, "Preview Frame received. Frame size: " + data.length);
+		Log.e(TAG,"Detect Time Interval:"+(System.currentTimeMillis()-time));
+		time = System.currentTimeMillis();
 		synchronized (syncObject) {
             mFrameChain[mChainIdx].put(0, 0, data);
             mCameraFrameReady = true;
@@ -295,7 +297,7 @@ public class XCameraView extends SurfaceView implements PreviewCallback,SurfaceH
         if (mListener != null) {
             modified = mListener.onCameraFrame(frame);
         } else {
-            modified = frame.rgba();
+        	modified = frame.rgba();
         }
 
         boolean bmpValid = true;
@@ -314,15 +316,6 @@ public class XCameraView extends SurfaceView implements PreviewCallback,SurfaceH
             Canvas canvas = getHolder().lockCanvas();
             if (canvas != null) {
                 canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
-//                if (mScale != 0) {
-//                    canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
-//                         new Rect((int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2),
-//                         (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2),
-//                         (int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2 + mScale*mCacheBitmap.getWidth()),
-//                         (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2 + mScale*mCacheBitmap.getHeight())), null);
-//                } else {
-//                     
-//                }
                 
                 canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
                         new Rect(0,
@@ -330,16 +323,12 @@ public class XCameraView extends SurfaceView implements PreviewCallback,SurfaceH
                         canvas.getWidth(),
                         canvas.getHeight()), null);
                 
-//                if (mFpsMeter != null) {
-//                    mFpsMeter.measure();
-//                    mFpsMeter.draw(canvas, 20, 30);
-//                }
                 getHolder().unlockCanvasAndPost(canvas);
             }
         }
         
-        Log.e(TAG,(System.currentTimeMillis()-time)+"");
-        time = System.currentTimeMillis();
+//        Log.e(TAG,(System.currentTimeMillis()-time)+"");
+//        time = System.currentTimeMillis();
     }
     
     private CvCameraViewListener2 mListener;
