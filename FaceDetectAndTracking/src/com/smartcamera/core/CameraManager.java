@@ -14,7 +14,6 @@ public class CameraManager {
 	
 	private static final String TAG = "CameraManager";
 	private static CameraManager mCameraManager = null;
-	private MediaPlayer player = null;
 	public static CameraManager getInstance() {
 		
 		if (null == mCameraManager) {
@@ -50,36 +49,6 @@ public class CameraManager {
 			}
 		}
 		return mCamera;
-	}
-	
-	private void setParams(){
-		if(mCamera!=null){
-			Camera.Parameters p = mCamera.getParameters();
-			List<Size> supportedPreviewSizes = p.getSupportedPreviewSizes();
-			int maxSize = 0;
-			Size maxPreviewSize = null;
-			for (Size size : supportedPreviewSizes) {
-				if (maxSize < (size.width * size.height)) {
-					maxSize = size.width * size.height;
-					maxPreviewSize = size;
-				}
-			}
-			p.setPreviewSize(maxPreviewSize.width, maxPreviewSize.height);
-			
-			List<Size> supportedPictureSizes = p.getSupportedPictureSizes();
-			maxSize = 0;
-			Size maxPictureSize = null;
-			for (Size size : supportedPictureSizes) {
-				if (maxSize < (size.width * size.height)) {
-					maxSize = size.width * size.height;
-					maxPictureSize = size;
-				}
-			}
-			p.setPreviewFrameRate(3);
-			p.setPictureSize(maxPictureSize.width, maxPictureSize.height);
-			p.setPreviewFormat(ImageFormat.NV21);
-			mCamera.setParameters(p);
-		}
 	}
 	
 	public Camera getCamera(){
