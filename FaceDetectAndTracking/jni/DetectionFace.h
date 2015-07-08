@@ -11,10 +11,10 @@ jint Java_com_smartcamera_core_CameraManager_loadCascade(JNIEnv *env,
 jintArray Java_com_smartcamera_core_CameraManager_decodeYUV420(JNIEnv *env,
 		jobject obj, jbyteArray buf, jint width, jint height);
 
-jintArray Java_com_smartcamera_core_CameraManager_grayImage(JNIEnv *,jobject,jintArray,jint,jint);
+jfloatArray Java_com_smartcamera_core_CameraManager_nativeDetectFace(JNIEnv *env,
+		jobject obj,jbyteArray,jint,jint,jint);
 
-
-jintArray Java_com_smartcamera_core_CameraManager_detectFaceX(JNIEnv *env,
+jfloatArray Java_com_smartcamera_core_CameraManager_nativeTrackingFace(JNIEnv *env,
 		jobject obj,jbyteArray,jint,jint,jint);
 
 int Java_com_smartcamera_core_CameraManager_enableSingleTracking(JNIEnv *env,

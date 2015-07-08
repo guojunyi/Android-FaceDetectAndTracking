@@ -14,37 +14,51 @@ import android.hardware.Camera.Size;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.smartcamera.HomeActivity;
 import com.smartcamera.core.CameraManager;
 import com.smartcamera.core.CameraManager.TrackingCallback;
+import com.smartcamera.core.Face;
 
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
-		Camera.PreviewCallback,TrackingCallback {
+		Camera.PreviewCallback, TrackingCallback {
 	private static final String TAG = "CameraView";
 	private Context mContext;
 	private SurfaceHolder mHolder;
-	
+
 	private CameraFaceFrameView mCameraFaceFrameView;
-	private Handler mHandler = new Handler(Looper.getMainLooper());
-	
+
+	private Handler mHandler = new Handler(Looper.getMainLooper()) {
+
+		@Override
+		public void handleMessage(Message msg) {
+			// TODO Auto-generated method stub
+			super.handleMessage(msg);
+			mCameraFaceFrameView.drawFaceFrames((Face[]) msg.obj);
+
+		}
+
+	};
+
 	private OrientationEventListener mOrientationEventListener;
 	private int rotateAngle;
-	
+
 	private byte[] mDatas1;
 	private byte[] mDatas2;
 	private int index = 0;
-	
+
 	private Thread mThread;
 	private Object syncObject = new Object();
-	
+
 	private boolean mStopThread;
 	private boolean mCameraFrameReady;
-	
+
 	public CameraView(Context context) {
 		// TODO Auto-generated constructor stub
 		this(context, null);
@@ -73,10 +87,10 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 			}
 
 		};
-		
+
 		mStopThread = false;
-        mThread = new Thread(new CameraWorker());
-        mThread.start();
+		mThread = new Thread(new CameraWorker());
+		mThread.start();
 	}
 
 	public void setCameraFaceFrameView(CameraFaceFrameView cameraFaceFrameView) {
@@ -114,19 +128,20 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 	public void surfaceDestroyed(SurfaceHolder holder) {
 		// TODO Auto-generated method stub
 		try {
-            mStopThread = true;
-            Log.e(TAG, "Notify thread");
-            synchronized (syncObject) {
-            	syncObject.notify();
-            }
-            Log.e(TAG, "Wating for thread");
-            if (mThread != null)
-                mThread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            mThread =  null;
-        }
+			mStopThread = true;
+			Log.e(TAG, "Notify thread");
+			synchronized (syncObject) {
+				syncObject.notify();
+			}
+			Log.e(TAG, "Wating for thread");
+			if (mThread != null)
+				mThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} finally {
+			mThread = null;
+		}
+
 		mCameraFrameReady = false;
 		mOrientationEventListener.disable();
 		CameraManager.getInstance().closeCamera();
@@ -159,18 +174,18 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 	}
 
 	private void handleSurfaceChanged() {
-		try{
+		try {
 			Camera camera = CameraManager.getInstance().getCamera();
 			Camera.Parameters parameters = camera.getParameters();
 
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && !android.os.Build.MODEL.equals("GT-I9100"))
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH
+					&& !android.os.Build.MODEL.equals("GT-I9100"))
 				parameters.setRecordingHint(true);
-			
-			//set camera preview format
+
+			// set camera preview format
 			parameters.setPreviewFormat(ImageFormat.NV21);
 
-			
-			//set camera preview size
+			// set camera preview size
 			List<Camera.Size> resolutionList = parameters
 					.getSupportedPreviewSizes();
 			if (resolutionList != null && resolutionList.size() > 0) {
@@ -179,22 +194,25 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 				int maxSize = 0;
 				for (int i = 0; i < resolutionList.size(); i++) {
 					Size size = resolutionList.get(i);
-					
-					if(size.width%160==0&&size.height%160==0){
-						if(size.width*size.height>maxSize){
-							maxSize = size.width*size.height;
+
+					if (size.width % 160 == 0 && size.height % 160 == 0) {
+						if (size.width * size.height > maxSize) {
+							maxSize = size.width * size.height;
 							previewSize = size;
 						}
 					}
 				}
-				
-				if(null!=previewSize){
-					parameters.setPreviewSize(previewSize.width,previewSize.height);
+
+				if (null != previewSize) {
+					parameters.setPreviewSize(previewSize.width,
+							previewSize.height);
 				}
 
 			}
-			
-			Log.e(TAG,parameters.getPreviewSize().width+":"+parameters.getPreviewSize().height);
+
+			Log.e(TAG,
+					parameters.getPreviewSize().width + ":"
+							+ parameters.getPreviewSize().height);
 
 			// set camera framerate
 			parameters.setPreviewFrameRate(30);
@@ -216,122 +234,119 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 						parameters
 								.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
 					} else
-						parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+						parameters
+								.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
 				}
 			}
-			
+
 			camera.setDisplayOrientation(90);
 			camera.setParameters(parameters);
-		}catch(Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
-
-	
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera) {
 		// TODO Auto-generated method stub
 		// the bitmap we want to fill with the image
 		Camera.Parameters p = camera.getParameters();
-		mCameraFaceFrameView.scaleFactorW = (float) p.getPreviewSize().height
-				/ (float) getMeasuredWidth();
-		mCameraFaceFrameView.scaleFactorH = (float) p.getPreviewSize().width / (float) getMeasuredHeight();
-		
+
 		synchronized (syncObject) {
-			if(index==0){
+
+			if (index == 0) {
 				mDatas1 = data;
-			}else if(index==1){
+			} else if (index == 1) {
 				mDatas2 = data;
 			}
-			
-            mCameraFrameReady = true;
-            syncObject.notify();
-        }
+
+			mCameraFrameReady = true;
+			syncObject.notify();
+		}
 
 	}
 
-//	public int[] detectFace(byte[] datas) {
-//		Camera camera = CameraManager.getInstance().getCamera();
-//		Camera.Parameters p = camera.getParameters();
-//		int[] rgb = CameraManager.getInstance().decodeYUV420(datas,
-//				p.getPreviewSize().width, p.getPreviewSize().height);
-//		Bitmap localBitmap1 = Bitmap.createBitmap(rgb,
-//				p.getPreviewSize().width, p.getPreviewSize().height,
-//				Config.RGB_565);
-//
-//		Matrix localMatrix = new Matrix();
-//		localMatrix.setRotate(90.0F);
-//		localMatrix.preScale(0.75f, 0.75f);
-//		Bitmap localBitmap2 = Bitmap.createBitmap(localBitmap1, 0, 0,
-//				localBitmap1.getWidth(), localBitmap1.getHeight(), localMatrix,
-//				true);
-//		int w = localBitmap2.getWidth();
-//		int h = localBitmap2.getHeight();
-//		// Log.e(TAG,w+":"+h);
-//
-//		// mOnDetectEndListener.onDetectEnd(localBitmap2);
-//
-//		int[] pix = new int[w * h];
-//		localBitmap2.getPixels(pix, 0, w, 0, 0, w, h);
-//		mCameraFaceFrameView.scaleFactorW = (float) localBitmap2.getWidth()
-//				/ (float) getMeasuredWidth();
-//		mCameraFaceFrameView.scaleFactorH = (float) localBitmap2.getHeight()
-//				/ (float) getMeasuredHeight();
-//		int[] faces = CameraManager.getInstance().detectFace(40, 40, pix, w, h);
-//
-//		return faces;
-//	}
-//
-//	private void saveJPG(byte[] data) {
-//		Camera camera = CameraManager.getInstance().getCamera();
-//		Camera.Parameters p = camera.getParameters();
-//
-//		File file = new File(Environment.getExternalStorageDirectory()
-//				.getAbsolutePath() + "/xxxx.jpg");
-//
-//		YuvImage localYuvImage = new YuvImage(data, 17,
-//				p.getPreviewSize().width, p.getPreviewSize().height, null);
-//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//		FileOutputStream outStream = null;
-//
-//		try {
-//			if (!file.exists())
-//				file.createNewFile();
-//			localYuvImage.compressToJpeg(new Rect(0, 0,
-//					p.getPreviewSize().width, p.getPreviewSize().height), 100,
-//					bos);
-//			Bitmap localBitmap1 = BitmapFactory.decodeByteArray(
-//					bos.toByteArray(), 0, bos.toByteArray().length);
-//			bos.close();
-//			Matrix localMatrix = new Matrix();
-//			localMatrix.setRotate(90.0F + rotateAngle);
-//			Bitmap localBitmap2 = Bitmap.createBitmap(localBitmap1, 0, 0,
-//					localBitmap1.getWidth(), localBitmap1.getHeight(),
-//					localMatrix, true);
-//			int w = localBitmap2.getWidth();
-//			int h = localBitmap2.getHeight();
-//			Log.e(TAG, w + ":" + h);
-//
-//			ByteArrayOutputStream bos2 = new ByteArrayOutputStream();
-//			localBitmap2.compress(Bitmap.CompressFormat.JPEG, 100, bos2);
-//			mCameraFaceFrameView.scaleFactorW = (float) localBitmap2.getWidth()
-//					/ (float) getMeasuredWidth();
-//			mCameraFaceFrameView.scaleFactorH = (float) localBitmap2
-//					.getHeight() / (float) getMeasuredHeight();
-//			outStream = new FileOutputStream(file);
-//			outStream.write(bos2.toByteArray());
-//			outStream.close();
-//			localBitmap1.recycle();
-//			localBitmap2.recycle();
-//
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//	}
+	// public int[] detectFace(byte[] datas) {
+	// Camera camera = CameraManager.getInstance().getCamera();
+	// Camera.Parameters p = camera.getParameters();
+	// int[] rgb = CameraManager.getInstance().decodeYUV420(datas,
+	// p.getPreviewSize().width, p.getPreviewSize().height);
+	// Bitmap localBitmap1 = Bitmap.createBitmap(rgb,
+	// p.getPreviewSize().width, p.getPreviewSize().height,
+	// Config.RGB_565);
+	//
+	// Matrix localMatrix = new Matrix();
+	// localMatrix.setRotate(90.0F);
+	// localMatrix.preScale(0.75f, 0.75f);
+	// Bitmap localBitmap2 = Bitmap.createBitmap(localBitmap1, 0, 0,
+	// localBitmap1.getWidth(), localBitmap1.getHeight(), localMatrix,
+	// true);
+	// int w = localBitmap2.getWidth();
+	// int h = localBitmap2.getHeight();
+	// // Log.e(TAG,w+":"+h);
+	//
+	// // mOnDetectEndListener.onDetectEnd(localBitmap2);
+	//
+	// int[] pix = new int[w * h];
+	// localBitmap2.getPixels(pix, 0, w, 0, 0, w, h);
+	// mCameraFaceFrameView.scaleFactorW = (float) localBitmap2.getWidth()
+	// / (float) getMeasuredWidth();
+	// mCameraFaceFrameView.scaleFactorH = (float) localBitmap2.getHeight()
+	// / (float) getMeasuredHeight();
+	// int[] faces = CameraManager.getInstance().detectFace(40, 40, pix, w, h);
+	//
+	// return faces;
+	// }
+	//
+	// private void saveJPG(byte[] data) {
+	// Camera camera = CameraManager.getInstance().getCamera();
+	// Camera.Parameters p = camera.getParameters();
+	//
+	// File file = new File(Environment.getExternalStorageDirectory()
+	// .getAbsolutePath() + "/xxxx.jpg");
+	//
+	// YuvImage localYuvImage = new YuvImage(data, 17,
+	// p.getPreviewSize().width, p.getPreviewSize().height, null);
+	// ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	// FileOutputStream outStream = null;
+	//
+	// try {
+	// if (!file.exists())
+	// file.createNewFile();
+	// localYuvImage.compressToJpeg(new Rect(0, 0,
+	// p.getPreviewSize().width, p.getPreviewSize().height), 100,
+	// bos);
+	// Bitmap localBitmap1 = BitmapFactory.decodeByteArray(
+	// bos.toByteArray(), 0, bos.toByteArray().length);
+	// bos.close();
+	// Matrix localMatrix = new Matrix();
+	// localMatrix.setRotate(90.0F + rotateAngle);
+	// Bitmap localBitmap2 = Bitmap.createBitmap(localBitmap1, 0, 0,
+	// localBitmap1.getWidth(), localBitmap1.getHeight(),
+	// localMatrix, true);
+	// int w = localBitmap2.getWidth();
+	// int h = localBitmap2.getHeight();
+	// Log.e(TAG, w + ":" + h);
+	//
+	// ByteArrayOutputStream bos2 = new ByteArrayOutputStream();
+	// localBitmap2.compress(Bitmap.CompressFormat.JPEG, 100, bos2);
+	// mCameraFaceFrameView.scaleFactorW = (float) localBitmap2.getWidth()
+	// / (float) getMeasuredWidth();
+	// mCameraFaceFrameView.scaleFactorH = (float) localBitmap2
+	// .getHeight() / (float) getMeasuredHeight();
+	// outStream = new FileOutputStream(file);
+	// outStream.write(bos2.toByteArray());
+	// outStream.close();
+	// localBitmap1.recycle();
+	// localBitmap2.recycle();
+	//
+	// } catch (FileNotFoundException e) {
+	// e.printStackTrace();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
 
 	private OnDetectEndListener mOnDetectEndListener;
 
@@ -342,104 +357,101 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 	public void setOnDetectEndListener(OnDetectEndListener listener) {
 		mOnDetectEndListener = listener;
 	}
-	
+
+	private void drawFaces(Face[] faces) {
+		Message msg = new Message();
+		msg.obj = faces;
+		mHandler.sendMessage(msg);
+	}
+
 	long time;
+
 	private class CameraWorker implements Runnable {
 
-        @Override
-        public void run() {
-            do {
-                synchronized (syncObject) {
-                    try {
-                        while (!mCameraFrameReady && !mStopThread) {
-                        	syncObject.wait();
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    
-                    index++;
-                    if(index>1){
-                    	index = 0;
-                    }
-                }
-                
-                if (!mStopThread && mCameraFrameReady) {
-                    mCameraFrameReady = false;
-                    
-                    Camera camera = CameraManager.getInstance().getCamera();
-        			Camera.Parameters p = camera.getParameters();
-        			
-        			byte[] imageBytes = index==0?mDatas2:mDatas1;
-        			
-        			
-        			int[] faces = CameraManager.getInstance().detectFaceX(imageBytes, p.getPreviewSize().width, p.getPreviewSize().height,-90);
-        			
+		@Override
+		public void run() {
+			do {
+				synchronized (syncObject) {
+					try {
+						while (!mCameraFrameReady && !mStopThread) {
+							syncObject.wait();
+						}
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 
-        			if (faces != null && faces.length != 0) {
-        				mHandler.post(new Runnable() {
-
-            				@Override
-            				public void run() {
-            					// TODO Auto-generated method stub
-            					mCameraFaceFrameView.clearFaceFrame();
-            				}
-
-            			});
-        				int count = faces[faces.length - 1];
-        				for (int i = 0; i < count; i++) {
-        					int flag = faces[5 * i + 4];
-        					if (flag == 1) {
-        						final RectF rect = new RectF(faces[5 * i + 0],
-        								faces[5 * i + 1], faces[5 * i + 0]
-        										+ faces[5 * i + 2], faces[5 * i + 1]
-        										+ faces[5 * i + 3]);
-        						
-        						mHandler.post(new Runnable() {
-
-        							@Override
-        							public void run() {
-        								// TODO Auto-generated method stub
-        								mCameraFaceFrameView.drawFaceFrame(rect);
-        							}
-
-        						});
-        					}
-        				}
-
-        			}
-        			
-        			Log.e(TAG,"Detect Time Interval:"+(System.currentTimeMillis()-time));
-        			time = System.currentTimeMillis();
-                }
-            } while (!mStopThread);
-            Log.e(TAG, "Finish processing thread");
-        }
-    }
-
-	@Override
-	public void onCallback(final RectF rect, int clearFlag) {
-		// TODO Auto-generated method stub
-		if(clearFlag==1){
-			mHandler.post(new Runnable() {
-
-				@Override
-				public void run() {
-					// TODO Auto-generated method stub
-					mCameraFaceFrameView.clearFaceFrame();
+					index++;
+					if (index > 1) {
+						index = 0;
+					}
 				}
 
-			});
+				if (!mStopThread && mCameraFrameReady) {
+					mCameraFrameReady = false;
+
+					Camera camera = CameraManager.getInstance().getCamera();
+					Camera.Parameters p = camera.getParameters();
+					byte[] imageBytes = index == 0 ? mDatas2 : mDatas1;
+
+//					if (!isDetecting) {
+//						isDetecting = true;
+//						new DetectWorker(imageBytes, p.getPreviewSize().width,
+//								p.getPreviewSize().height).start();
+//					}
+//					Face[] faces = CameraManager.getInstance().trackingFace(
+//							imageBytes, p.getPreviewSize().width,
+//							p.getPreviewSize().height, -90);
+
+					Face[] faces = CameraManager.getInstance().findFaces(imageBytes, p.getPreviewSize().width,
+							p.getPreviewSize().height,
+							-90);
+					if (faces != null && faces.length != 0) {
+						drawFaces(faces);
+					} else {
+						drawFaces(null);
+					}
+
+					Log.e(TAG,
+							"Detect Time Interval:"
+									+ (System.currentTimeMillis() - time));
+					time = System.currentTimeMillis();
+				}
+			} while (!mStopThread);
+			Log.e(TAG, "Finish processing thread");
 		}
-		
+	}
+
+	@Override
+	public void onCallback(final RectF rect, final double clearFlag) {
+		// TODO Auto-generated method stub
 		mHandler.post(new Runnable() {
 
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
-				mCameraFaceFrameView.drawFaceFrame(rect);
+				((HomeActivity) mContext).textView.setText("" + clearFlag);
 			}
-
 		});
 	}
+
+	boolean isDetecting;
+	private class DetectWorker extends Thread {
+
+		byte[] imageBytes;
+		int width;
+		int height;
+
+		public DetectWorker(byte[] datas, int width, int height) {
+			this.imageBytes = datas;
+			this.width = width;
+			this.height = height;
+		}
+
+		@Override
+		public void run() {
+			CameraManager.getInstance().findFaces(imageBytes, width, height,
+					-90);
+			isDetecting = false;
+		}
+	};
 }

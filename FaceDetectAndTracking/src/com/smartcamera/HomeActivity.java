@@ -36,7 +36,7 @@ public class HomeActivity extends Activity{
 	ImageView imageView;
 	Handler mHandler = new Handler(Looper.getMainLooper());
 
-	TextView textView;
+	public TextView textView;
 	CheckBox checkBox;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +46,7 @@ public class HomeActivity extends Activity{
 
 		cameraView = (CameraView) findViewById(R.id.cameraView);
 		faceFrameView = (CameraFaceFrameView) findViewById(R.id.faceFrameView);
+		imageView = (ImageView) findViewById(R.id.imageView);
 		cameraView.setCameraFaceFrameView(faceFrameView);
 
 		cameraView.setOnDetectEndListener(new OnDetectEndListener() {
@@ -85,6 +86,8 @@ public class HomeActivity extends Activity{
 			}
 			
 		});
+		
+		textView = (TextView) findViewById(R.id.textView);
 		
 	}
 

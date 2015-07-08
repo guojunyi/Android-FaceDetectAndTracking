@@ -28,6 +28,8 @@ public:
 	Mat hist;
 	Mat histimg;
 	Mat backproj;
+
+	int initSize;
 	int hsize;
 	float hranges[2];
 	const float* phranges;

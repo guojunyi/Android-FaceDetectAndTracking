@@ -1,12 +1,7 @@
 package com.smartcamera.core;
 
-import java.util.List;
-
-import android.graphics.ImageFormat;
 import android.graphics.RectF;
 import android.hardware.Camera;
-import android.hardware.Camera.Size;
-import android.media.MediaPlayer;
 import android.util.Log;
 
 public class CameraManager {
@@ -85,13 +80,52 @@ public class CameraManager {
 		return this.currentCameraId;
 	}
 	
+	public Face[] findFaces(byte[] datas,int width,int height,int angle){
+		float[] faceDatas = nativeDetectFace(datas,width,height,angle);
+		if(null!=faceDatas&&faceDatas.length>0){
+			int count = faceDatas.length/4;
+			Face[] faces = new Face[count];
+			for(int i=0;i<count;i++){
+				Face face = new Face();
+				face.left = faceDatas[i*4+0];
+				face.top = faceDatas[i*4+1];
+				face.right = faceDatas[i*4+2];
+				face.bottom = faceDatas[i*4+3];
+				faces[i] = face;
+			}
+			return faces;
+		}
+		
+		return null;
+	}
+	
+	public Face[] trackingFace(byte[] datas,int width,int height,int angle){
+		float[] faceDatas = nativeTrackingFace(datas,width,height,angle);
+		if(null!=faceDatas&&faceDatas.length>0){
+			int count = faceDatas.length/4;
+			Face[] faces = new Face[count];
+			for(int i=0;i<count;i++){
+				Face face = new Face();
+				face.left = faceDatas[i*4+0];
+				face.top = faceDatas[i*4+1];
+				face.right = faceDatas[i*4+2];
+				face.bottom = faceDatas[i*4+3];
+				faces[i] = face;
+			}
+			return faces;
+		}
+		
+		return null;
+	}
+	
 	public native int[] decodeYUV420(byte[] datas,int w,int h);
 	
-	public native int[] grayImage(int[] buf,int w,int h); 
 	
 	public native int loadCascade(String cascade1,String cascade2,String cascade3,String cascade4);
 	
-	public native int[] detectFaceX(byte[] datas,int width,int height,int angle);
+	private native float[] nativeDetectFace(byte[] datas,int width,int height,int angle);
+	
+	private native float[] nativeTrackingFace(byte[] datas,int width,int height,int angle);
 	
 	public native int enableSingleTracking(int isEnable);
 	
@@ -103,6 +137,11 @@ public class CameraManager {
         return 0;    
     } 
 	
+	public int showHanming(double value){
+		mTrackingCallback.onCallback(null, value);
+		return 0;
+	}
+	
 	private TrackingCallback mTrackingCallback;
 	
 	public void setTrackingCallback(TrackingCallback trackingCallback){
@@ -111,6 +150,6 @@ public class CameraManager {
 	
 	public interface TrackingCallback{
 		
-		public void onCallback(RectF rect,int clearFlag);
+		public void onCallback(RectF rect,double clearFlag);
 	}
 }

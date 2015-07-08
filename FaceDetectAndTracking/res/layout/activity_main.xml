@@ -19,7 +19,20 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" 
             />
-        
+        <ImageView 
+            android:id="@+id/imageView"
+            android:layout_width="130dp"
+            android:layout_height="150dp"
+            android:scaleType="fitCenter"
+            />
+        <TextView 
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#fff"
+            android:layout_margin="10dp"
+            />
     </RelativeLayout>
 
     <RelativeLayout
@@ -38,7 +51,6 @@
             android:layout_marginLeft="10dp"
             />
         <TextView 
-            android:id="@+id/textView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:text="Enable single tracking"
