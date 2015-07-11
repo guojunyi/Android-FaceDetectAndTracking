@@ -16,7 +16,10 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import com.smartcamera.core.CameraManager;
@@ -33,11 +36,11 @@ public class HomeActivity extends Activity{
 
 	CameraView cameraView;
 	CameraFaceFrameView faceFrameView;
-	ImageView imageView;
 	Handler mHandler = new Handler(Looper.getMainLooper());
 
 	public TextView textView;
-	CheckBox checkBox;
+	CheckBox checkBox1,checkBox2;
+	RadioButton radio1,radio2,radio3;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -46,48 +49,90 @@ public class HomeActivity extends Activity{
 
 		cameraView = (CameraView) findViewById(R.id.cameraView);
 		faceFrameView = (CameraFaceFrameView) findViewById(R.id.faceFrameView);
-		imageView = (ImageView) findViewById(R.id.imageView);
 		cameraView.setCameraFaceFrameView(faceFrameView);
 
-		cameraView.setOnDetectEndListener(new OnDetectEndListener() {
-
-			@Override
-			public void onDetectEnd(final Bitmap bitmap) {
-				// TODO Auto-generated method stub
-				mHandler.post(new Runnable() {
-
-					@Override
-					public void run() {
-						// TODO Auto-generated method stub
-						imageView.setImageBitmap(bitmap);
-					}
-
-				});
-
-			}
-
-		});
 		initOpencv();
-
 		
-		checkBox = (CheckBox) findViewById(R.id.checkBox);
-		checkBox.setOnClickListener(new OnClickListener(){
+		checkBox1 = (CheckBox) findViewById(R.id.checkBox1);
+		checkBox1.setOnClickListener(new OnClickListener(){
 
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				if(checkBox.isChecked()){
-					checkBox.setChecked(true);
-					CameraManager.getInstance().enableSingleTracking(1);
+				if(CameraManager.getInstance().nativeIsEnableTracking()==1){
+					checkBox1.setChecked(false);
+					CameraManager.getInstance().nativeEnableTracking(0);
 				}else{
-					checkBox.setChecked(false);
-					CameraManager.getInstance().enableSingleTracking(0);
+					checkBox1.setChecked(true);
+					CameraManager.getInstance().nativeEnableTracking(1);
 				}
 			}
 			
 		});
 		
+		checkBox2 = (CheckBox) findViewById(R.id.checkBox2);
+		checkBox2.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if(CameraManager.getInstance().nativeIsEnableAsyncDetect()==1){
+					checkBox2.setChecked(false);
+					CameraManager.getInstance().nativeEnableAsyncDetect(0);
+				}else{
+					checkBox2.setChecked(true);
+					CameraManager.getInstance().nativeEnableAsyncDetect(1);
+				}
+			}
+			
+		});
+		
+		
 		textView = (TextView) findViewById(R.id.textView);
+		
+		
+		radio1 = (RadioButton) findViewById(R.id.radio1);
+		radio2 = (RadioButton) findViewById(R.id.radio2);
+		radio3 = (RadioButton) findViewById(R.id.radio3);
+		radio1.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				// TODO Auto-generated method stub
+				if(isChecked){
+					CameraManager.getInstance().nativeSetTrackingMode(0);
+				}
+				
+			}
+			
+		});
+		
+		radio2.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				// TODO Auto-generated method stub
+				if(isChecked){
+					CameraManager.getInstance().nativeSetTrackingMode(1);
+				}
+			}
+			
+		});
+		
+		radio3.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				// TODO Auto-generated method stub
+				if(isChecked){
+					CameraManager.getInstance().nativeSetTrackingMode(2);
+				}
+			}
+			
+		});
 		
 	}
 

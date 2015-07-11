@@ -57,7 +57,7 @@ public class CameraManager {
 				if (mCamera != null) {
 					mCamera.stopPreview();
 					mCamera.setPreviewCallback(null);
-					mCamera.release(); // release the camera for other applications
+					mCamera.release();
 					mCamera = null;
 				}
 			}
@@ -67,14 +67,6 @@ public class CameraManager {
 		
 	}
 	
-	
-//	public interface PreviewCallback{
-//		public void onPreviewFrame(byte[] data, Camera camera);
-//	}
-//	
-//	public void setPreviewCallback(PreviewCallback callback){
-//		this.mPreviewCallback = callback;
-//	}
 	
 	public int getCurrentCameraId(){
 		return this.currentCameraId;
@@ -127,7 +119,12 @@ public class CameraManager {
 	
 	private native float[] nativeTrackingFace(byte[] datas,int width,int height,int angle);
 	
-	public native int enableSingleTracking(int isEnable);
+	public native int nativeEnableTracking(int isEnable);
+	public native int nativeIsEnableTracking();
+	public native int nativeIsEnableAsyncDetect();
+	public native int nativeEnableAsyncDetect(int isEnable);
+	public native int nativeSetTrackingMode(int mode);
+	
 	
 	public int trackFace(int[] datas){   
 		RectF rect = new RectF(datas[0],datas[1],datas[0]+datas[2],datas[1]+datas[3]);

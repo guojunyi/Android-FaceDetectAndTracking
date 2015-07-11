@@ -6,59 +6,142 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        >
+        android:layout_weight="1" >
 
         <com.smartcamera.widget.CameraView
             android:id="@+id/cameraView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" 
-            />
+            android:layout_height="match_parent" />
+
         <com.smartcamera.widget.CameraFaceFrameView
             android:id="@+id/faceFrameView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" 
-            />
-        <ImageView 
-            android:id="@+id/imageView"
-            android:layout_width="130dp"
-            android:layout_height="150dp"
-            android:scaleType="fitCenter"
-            />
-        <TextView 
+            android:layout_height="match_parent" />
+
+        <TextView
             android:id="@+id/textView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="#fff"
             android:layout_margin="10dp"
-            />
+            android:textColor="#fff"
+            android:textSize="14sp" />
     </RelativeLayout>
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp" 
+        android:layout_height="150dp"
         android:background="#000"
-        >
-       
-        <CheckBox
-            android:id="@+id/checkBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="false"
-            android:layout_centerVertical="true"
-            android:layout_marginRight="10dp"
-            android:layout_marginLeft="10dp"
-            />
-        <TextView 
+        android:orientation="vertical" >
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="Enable single tracking"
-            android:layout_toRightOf="@+id/checkBox"
-            android:textSize="18sp"
-            android:textColor="#fff"
-            android:gravity="left|center_vertical"
-            />
-    </RelativeLayout>
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal" >
+
+            <CheckBox
+                android:id="@+id/checkBox1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:checked="false" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_toRightOf="@+id/checkBox"
+                android:gravity="left|center_vertical"
+                android:text="Enable tracking"
+                android:textColor="#fff"
+                android:textSize="14sp" />
+            
+            <CheckBox
+                android:id="@+id/checkBox2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:checked="false" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_toRightOf="@+id/checkBox"
+                android:gravity="left|center_vertical"
+                android:text="Async Detect"
+                android:textColor="#fff"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal" >
+
+            <RadioGroup
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" >
+
+                <RadioButton
+                    android:id="@+id/radio1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="5dp"
+                    android:checked="true" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_toRightOf="@+id/checkBox"
+                    android:gravity="left|center_vertical"
+                    android:text="Single"
+                    android:textColor="#fff"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/radio2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="5dp"
+                    android:checked="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_toRightOf="@+id/checkBox"
+                    android:gravity="left|center_vertical"
+                    android:text="Double"
+                    android:textColor="#fff"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/radio3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="5dp"
+                    android:checked="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_toRightOf="@+id/checkBox"
+                    android:gravity="left|center_vertical"
+                    android:text="Mulity"
+                    android:textColor="#fff"
+                    android:textSize="14sp" />
+            </RadioGroup>
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

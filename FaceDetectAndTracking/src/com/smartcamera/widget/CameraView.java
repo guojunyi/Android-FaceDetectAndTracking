@@ -33,7 +33,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 	private SurfaceHolder mHolder;
 
 	private CameraFaceFrameView mCameraFaceFrameView;
-
+	
 	private Handler mHandler = new Handler(Looper.getMainLooper()) {
 
 		@Override
@@ -59,6 +59,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 	private boolean mStopThread;
 	private boolean mCameraFrameReady;
 
+	private boolean isEnableAsyncDetect;
 	public CameraView(Context context) {
 		// TODO Auto-generated constructor stub
 		this(context, null);
@@ -393,23 +394,36 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
 					Camera.Parameters p = camera.getParameters();
 					byte[] imageBytes = index == 0 ? mDatas2 : mDatas1;
 
-//					if (!isDetecting) {
-//						isDetecting = true;
-//						new DetectWorker(imageBytes, p.getPreviewSize().width,
-//								p.getPreviewSize().height).start();
-//					}
-//					Face[] faces = CameraManager.getInstance().trackingFace(
-//							imageBytes, p.getPreviewSize().width,
-//							p.getPreviewSize().height, -90);
-
-					Face[] faces = CameraManager.getInstance().findFaces(imageBytes, p.getPreviewSize().width,
-							p.getPreviewSize().height,
-							-90);
-					if (faces != null && faces.length != 0) {
-						drawFaces(faces);
-					} else {
-						drawFaces(null);
+					if(CameraManager.getInstance().nativeIsEnableAsyncDetect()==1){
+						if (!isDetecting) {
+							isDetecting = true;
+							new DetectWorker(imageBytes, p.getPreviewSize().width,
+									p.getPreviewSize().height).start();
+						}
+						
+						Face[] faces = CameraManager.getInstance().trackingFace(
+								imageBytes, p.getPreviewSize().width,
+								p.getPreviewSize().height, -90);
+						
+						if (faces != null && faces.length != 0) {
+							drawFaces(faces);
+						} else {
+							drawFaces(null);
+						}
+					}else{
+						Face[] faces = CameraManager.getInstance().findFaces(imageBytes, p.getPreviewSize().width,
+								p.getPreviewSize().height,
+								-90);
+						if (faces != null && faces.length != 0) {
+							drawFaces(faces);
+						} else {
+							drawFaces(null);
+						}
 					}
+					
+
+					
+					
 
 					Log.e(TAG,
 							"Detect Time Interval:"

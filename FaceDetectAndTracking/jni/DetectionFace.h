@@ -17,7 +17,19 @@ jfloatArray Java_com_smartcamera_core_CameraManager_nativeDetectFace(JNIEnv *env
 jfloatArray Java_com_smartcamera_core_CameraManager_nativeTrackingFace(JNIEnv *env,
 		jobject obj,jbyteArray,jint,jint,jint);
 
-int Java_com_smartcamera_core_CameraManager_enableSingleTracking(JNIEnv *env,
+int Java_com_smartcamera_core_CameraManager_nativeEnableTracking(JNIEnv *env,
+		jobject obj,jint);
+
+int Java_com_smartcamera_core_CameraManager_nativeIsEnableTracking(JNIEnv *env,
+		jobject obj);
+
+int Java_com_smartcamera_core_CameraManager_nativeEnableAsyncDetect(JNIEnv *env,
+		jobject obj,jint);
+
+int Java_com_smartcamera_core_CameraManager_nativeIsEnableAsyncDetect(JNIEnv *env,
+		jobject obj);
+
+int Java_com_smartcamera_core_CameraManager_nativeSetTrackingMode(JNIEnv *env,
 		jobject obj,jint);
 
 #ifdef __cplusplus

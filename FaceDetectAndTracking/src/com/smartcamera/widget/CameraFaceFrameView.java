@@ -45,7 +45,6 @@ public class CameraFaceFrameView extends View {
 				int top = (int)  (face.top*getHeight());
 				int right = (int)  (face.right*getWidth());
 				int bottom = (int)  (face.bottom*getHeight());
-				Log.e("MY",left+" "+top+" "+right+" "+bottom);
 				canvas.drawRoundRect(new RectF(left,top,right,bottom), Utils.dp2px(getContext(), 5), Utils.dp2px(getContext(), 5), mPaint);
 			}
 		}

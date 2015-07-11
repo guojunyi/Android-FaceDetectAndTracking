@@ -29,6 +29,7 @@ public:
 	Mat histimg;
 	Mat backproj;
 
+	int index;
 	int initSize;
 	int hsize;
 	float hranges[2];
