@@ -16,24 +16,8 @@
 ##2015-07-08
 为了更远距离精准扫描人脸 摄像头预览大小设置成最大，以我的测试机为例是1280x960,而camshift 不依赖物体大小变化所以在追踪时对图片进行压缩640x480(太小也不行，容易变形)，速度从60ms每次提高在35ms左右，
 另外增加丢失判断追踪区域大小大于初始化大小2.5倍或者小于初始化大小0.25视为严重变形判断为丢失,快速移动下丢失情况又好一点了，但复杂背景色差变形依然存在.
-``` java
-bool isMissTracking(float left, float top, float right, float bottom) {
-	if (left <= 0 || top <= 0 || right >= 1.0 || (bottom >= 1.0)) {
-		return true;
-	}
 
-	int width = TRACKING_IMAGE_WIDTH * (right - left);
-	int height = TRACKING_IMAGE_HEIGHT * (bottom - top);
-	if (width * height > (trackObj.initSize * 2.5)) {
-		LOGE("too large missing tracking.");
-		return true;
-	}
 
-	if (width * height < (trackObj.initSize * 0.25)) {
-		LOGE("too small missing tracking.");
-		return true;
-	}
-	return false;
-}
-``` 
+##2015-07-11
+增加多人追踪，异步检测，camshift追踪区域从整个脸部缩小范围锁定额头，复杂背景下更容易锁定不易变形。
 
